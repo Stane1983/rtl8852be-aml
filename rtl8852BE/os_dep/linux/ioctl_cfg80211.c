@@ -16,6 +16,10 @@
 
 #include <drv_types.h>
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41) && defined (CONFIG_AMLOGIC_KERNEL_VERSION))
+#include <linux/upstream_version.h>
+#endif
+
 #ifdef CONFIG_IOCTL_CFG80211
 
 #ifndef DBG_RTW_CFG80211_STA_PARAM
@@ -491,7 +495,11 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset,
 	if (started) {
 #ifdef CONFIG_MLD_KERNEL_PATCH
 		/* ToDo CONFIG_RTW_MLD */
+		#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+		cfg80211_ch_switch_started_notify(adapter->pnetdev, &chdef, 0, 0, false, 0);
+		#else
 		cfg80211_ch_switch_started_notify(adapter->pnetdev, &chdef, 0, 0, false);
+		#endif
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0))
 
 		/* --- cfg80211_ch_switch_started_notfiy() ---
@@ -515,7 +523,11 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset,
 
 #ifdef CONFIG_MLD_KERNEL_PATCH
 	/* ToDo CONFIG_RTW_MLD */
+	#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef, 0, 0);
+	#else
 	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef, 0);
+	#endif
 #else
 	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef);
 #endif
@@ -533,7 +545,11 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, u8 ch, u8 bw, u8 offset,
 	}
 
 	ctype = rtw_chbw_to_nl80211_channel_type(ch, bw, offset, ht);
+#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+	cfg80211_ch_switch_notify(adapter->pnetdev, freq, ctype, 0);
+#else
 	cfg80211_ch_switch_notify(adapter->pnetdev, freq, ctype);
+#endif
 #endif
 
 exit:
