@@ -125,7 +125,7 @@ static u8 rtw_efuse_fake2map(_adapter *padapter, u8 efuse_type)
 	return res;
 }
 
-static u8 rtw_efuse_read_map2shadow(_adapter *padapter, u8 efuse_type)
+u8 rtw_efuse_read_map2shadow(_adapter *padapter, u8 efuse_type)
 {
 	struct rtw_efuse_phl_arg *efuse_arg = NULL;
 	u8 res = _SUCCESS;
@@ -953,8 +953,6 @@ int rtw_ioctl_efuse_set(struct net_device *dev,
 	_adapter *padapter = (_adapter *)rtw_netdev_priv(dev);
 	struct dvobj_priv *dvobj = adapter_to_dvobj(padapter);
 
-	u8 ips_mode = IPS_NUM; /* init invalid value */
-	u8 lps_mode = PM_PS_MODE_NUM; /* init invalid value */
 	u32 i = 0, j = 0, jj = 0, kk = 0;
 	u8 *setdata = NULL;
 	u8 *shadowmap = NULL;
@@ -981,16 +979,6 @@ int rtw_ioctl_efuse_set(struct net_device *dev,
 		err = -ENOMEM;
 		goto exit;
 	}
-
-#ifdef CONFIG_LPS
-	lps_mode = pwrctrlpriv->power_mgnt;/* keep org value */
-	rtw_pm_set_lps(padapter, PM_PS_MODE_ACTIVE);
-#endif
-
-#ifdef CONFIG_IPS
-	ips_mode = pwrctrlpriv->ips_mode;/* keep org value */
-	rtw_pm_set_ips(padapter, IPS_NONE);
-#endif
 
 	pch = extra;
 	RTW_INFO("%s: in=%s\n", __FUNCTION__, extra);
@@ -1337,16 +1325,6 @@ exit:
 		rtw_mfree(shadowmap, size);
 
 	wrqu->length = strlen(extra);
-
-	if (padapter->registrypriv.mp_mode == 0) {
-#ifdef CONFIG_IPS
-		rtw_pm_set_ips(padapter, ips_mode);
-#endif /* CONFIG_IPS */
-
-#ifdef CONFIG_LPS
-		rtw_pm_set_lps(padapter, lps_mode);
-#endif /* CONFIG_LPS */
-	}
 
 	return err;
 }
