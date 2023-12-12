@@ -145,7 +145,7 @@ void msg_forward(struct phl_info_t* phl, struct phl_msg_ex* ex)
 
 }
 
-static int msg_hub_thread_hdl(void* param)
+int msg_thread_hdl(void* param)
 {
 	struct phl_info_t* phl = (struct phl_info_t *)param;
 	void *d = phl_to_drvpriv(phl);
@@ -233,7 +233,7 @@ enum rtw_phl_status phl_msg_hub_start(struct phl_info_t* phl)
 	for(i = 0; i < MAX_MSG_NUM; i++) {
 		pq_push(d, &hub->idle_msg_q, &hub->msg_pool[i].list, _tail, _bh);
 	}
-	_os_thread_init(d, &(hub->msg_notify_thread), msg_hub_thread_hdl, phl,
+	_os_thread_init(d, &(hub->msg_notify_thread), msg_thread_hdl, phl,
 						"msg_notify_thread");
 	_os_thread_schedule(d, &(hub->msg_notify_thread));
 	SET_STATUS_FLAG(hub->status, MSG_HUB_STARTED);
@@ -377,6 +377,22 @@ void phl_msg_hub_phy_mgnt_evt_hdlr(struct phl_info_t* phl, u16 evt_id)
 	}
 }
 
+void phl_msg_hub_tx_evt_hdlr(struct phl_info_t *phl, u16 evt_id,
+                             u8 *buf, u32 len)
+{
+	PHL_INFO("%s : evt_id %d.\n", __func__, evt_id);
+
+	switch (evt_id) {
+	case MSG_EVT_LTR_TX_DLY:
+		_os_delay_us(phl_to_drvpriv(phl), 500);
+		rtw_phl_tx_req_notify(phl);
+		break;
+	default:
+		break;
+	}
+
+}
+
 void phl_msg_hub_rx_evt_hdlr(struct phl_info_t* phl, u16 evt_id,
 		u8 *buf, u32 len)
 {
@@ -392,11 +408,6 @@ void phl_msg_hub_rx_evt_hdlr(struct phl_info_t* phl, u16 evt_id,
 	case MSG_EVT_DBG_RX_DUMP:
 		phl_rx_dbg_dump(phl, HW_PHY_0);
 		break;
-#ifdef CONFIG_PHL_TWT
-	case MSG_EVT_TWT_WAIT_ANNOUNCE:
-		rtw_phl_twt_handle_c2h_wait_annc(phl, buf);
-		break;
-#endif
 	default:
 		break;
 	}

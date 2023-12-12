@@ -152,14 +152,6 @@
 
 #endif
 
-/*
- * MLD related linux kernel patch in
- * Android Common Kernel android13-5.15(5.15.41)
- */
-#if (defined(__ANDROID_COMMON_KERNEL__) && (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 41)))
-        #define CONFIG_MLD_KERNEL_PATCH
-#endif
-
 #define ATOMIC_T atomic_t
 
 #ifdef DBG_MEMORY_LEAK
@@ -502,6 +494,7 @@ typedef void *thread_context;
 struct thread_hdl{
 	_thread_hdl_ thread_handler;
 	u8 thread_status;
+	u8 cpu_id;
 };
 #define THREAD_STATUS_STARTED BIT(0)
 #define THREAD_STATUS_STOPPED BIT(1)
@@ -539,13 +532,28 @@ static inline _thread_hdl_ rtw_thread_start(int (*threadfn)(void *data),
 	}
 	return _rtw_thread;
 }
+static inline _thread_hdl_ rtw_thread_cpu_start(int (*threadfn)(void *data),
+			void *data, const char namefmt[], u8 cpu_id)
+{
+	_thread_hdl_ _rtw_thread = NULL;
 
+	_rtw_thread = kthread_create(threadfn, data, namefmt);
+	if (IS_ERR(_rtw_thread)) {
+		WARN_ON(!_rtw_thread);
+		_rtw_thread = NULL;
+	}
+	else {
+		/* Specific CPU */
+		kthread_bind(_rtw_thread, cpu_id);
+		wake_up_process(_rtw_thread);
+	}
+	return _rtw_thread;
+}
 static inline bool rtw_thread_stop(_thread_hdl_ th)
 {
 
 	return kthread_stop(th);
 }
-
 static inline void rtw_thread_wait_stop(void)
 {
 	#if 0
@@ -770,13 +778,6 @@ __inline static void _set_workitem(_workitem *pwork)
 #endif
 }
 
-#ifdef CONFIG_PHL_HANDLER_WQ_HIGHPRI
-__inline static void _set_workitem_highpri(_workitem *pwork)
-{
-	queue_work(system_highpri_wq, pwork);
-}
-#endif
-
 __inline static void _cancel_workitem_sync(_workitem *pwork)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22))
@@ -788,7 +789,7 @@ __inline static void _cancel_workitem_sync(_workitem *pwork)
 #endif
 }
 
-#ifdef CONFIG_CPU_BALANCE
+#ifdef CONFIG_PHL_CPU_BALANCE
 typedef struct rtw_work_struct _workitem_cpu;
 struct rtw_work_struct {
 	/*_workitem must put at top */
@@ -797,10 +798,10 @@ struct rtw_work_struct {
 
 	char work_name[32];
 	struct workqueue_struct *pwkq;
-	int cpu_id;
+	u8 cpu_id;
 };
 
-static inline void _config_workitem_cpu(_workitem_cpu *pwork, char *name, int cpu_id)
+static inline void _config_workitem_cpu(_workitem_cpu *pwork, char *name, u8 cpu_id)
 {
 	pwork->cpu_id = cpu_id;
 	strcpy(pwork->work_name, name);
@@ -809,11 +810,7 @@ static inline void _config_workitem_cpu(_workitem_cpu *pwork, char *name, int cp
 static inline void _init_workitem_cpu(_workitem_cpu *pwork, void *pfunc, void *cntx)
 {
 	INIT_WORK(&pwork->wk, pfunc);
-#ifdef CONFIG_CPU_SPECIFIC
 	pwork->pwkq = alloc_workqueue(pwork->work_name, WQ_HIGHPRI, 0);
-#else
-	pwork->pwkq = alloc_workqueue(pwork->work_name, WQ_MEM_RECLAIM | WQ_HIGHPRI | WQ_UNBOUND, 0);
-#endif
 }
 
 __inline static void _set_workitem_cpu(_workitem_cpu *pwork)
@@ -825,7 +822,7 @@ __inline static void _cancel_workitem_sync_cpu(_workitem_cpu *pwork)
 {
 	cancel_work_sync(&pwork->wk);
 }
-#endif /*CONFIG_CPU_BALANCE*/
+#endif /*CONFIG_PHL_CPU_BALANCE*/
 
 /*
  * Global Mutex: can only be used at PASSIVE level.
@@ -1101,9 +1098,10 @@ static inline void rtw_dump_stack(void)
 #endif
 #endif
 
-#ifndef static_assert
-#define static_assert(expr, ...) __static_assert(expr, ##__VA_ARGS__, #expr)
-#define __static_assert(expr, msg, ...) _Static_assert(expr, msg)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0))
+#define rtw_dev_addr_mod(dev, offset, addr, len) _rtw_memcpy(&dev->dev_addr[offset], addr, len)
+#else
+#define rtw_dev_addr_mod dev_addr_mod
 #endif
 
 #ifdef CONFIG_PCI_HCI
@@ -1129,9 +1127,5 @@ static inline void rtw_dump_stack(void)
 #define  PCI_L1SS_CTL1_L1SS_MASK	0x0000000F
 #endif
 #endif /* CONFIG_PCI_HCI */
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 17, 0))
-#define dev_addr_mod(dev, offset, addr, len) _rtw_memcpy(&dev->dev_addr[offset], addr, len)
-#endif
 
 #endif /* __OSDEP_LINUX_SERVICE_H_ */
