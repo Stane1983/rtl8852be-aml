@@ -192,6 +192,11 @@ inline bool _rtw_time_after(systime a, systime b)
 	return time_after(a, b);
 }
 
+inline bool _rtw_time_after_eq(systime a, systime b)
+{
+	return time_after_eq(a, b);
+}
+
 void rtw_sleep_schedulable(int ms)
 {
 	u32 delta;
@@ -898,7 +903,7 @@ int rtw_change_ifname(_adapter *padapter, const char *ifname)
 
 	rtw_init_netdev_name(pnetdev, ifname);
 
-	rtw_dev_addr_mod(pnetdev, 0, adapter_mac_addr(padapter), ETH_ALEN);
+	dev_addr_mod(pnetdev, 0, adapter_mac_addr(padapter), ETH_ALEN);
 
 	if (rtnl_lock_needed)
 		ret = register_netdev(pnetdev);
