@@ -669,7 +669,11 @@ endif
 
 ############ ANDROID COMMON KERNEL ############
 export M ?= $(shell pwd)
+
+ifneq ($(CONFIG_RTW_AML_YOCTO_OS), y)
 export OUT_DIR ?= $(shell pwd)
+endif
+
 ifneq ($(LLVM),)
 export CC_STRIP = llvm-strip
 else
