@@ -251,7 +251,7 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, struct rtw_chan_def *rtw_chd
 	if (started) {
 #if defined(CONFIG_MLD_KERNEL_PATCH)
 		/* ToDo CONFIG_RTW_MLD */
-		#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+		#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 153))
 		cfg80211_ch_switch_started_notify(adapter->pnetdev, &chdef, 0, 0, false, 0);
 		#else
 		cfg80211_ch_switch_started_notify(adapter->pnetdev, &chdef, 0, 0, false);
@@ -279,7 +279,7 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, struct rtw_chan_def *rtw_chd
 
 #if (defined(CONFIG_MLD_KERNEL_PATCH) || (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 2)))
 	/* ToDo CONFIG_RTW_MLD */
-	#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+	#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 153))
 	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef, 0, 0);
 	#else
 	cfg80211_ch_switch_notify(adapter->pnetdev, &chdef, 0);
@@ -301,7 +301,7 @@ u8 rtw_cfg80211_ch_switch_notify(_adapter *adapter, struct rtw_chan_def *rtw_chd
 	}
 
 	ctype = rtw_chdef_to_nl80211_channel_type(rtw_chdef, ht);
-#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0))
+#if ((defined (AML_KERNEL_VERSION) && AML_KERNEL_VERSION >= 15) || LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 153))
 	cfg80211_ch_switch_notify(adapter->pnetdev, freq, ctype, 0);
 #else
 	cfg80211_ch_switch_notify(adapter->pnetdev, freq, ctype);
